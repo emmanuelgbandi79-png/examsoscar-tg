@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDeRMiR2fAe-5La98F4J_E-1cyDHceyCsw",
@@ -12,43 +13,56 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
-// --- FONCTION AJOUTER ---
+// --- AJOUTER UNE ÉPREUVE AVEC PDF ---
 document.getElementById('add-btn').addEventListener('click', async () => {
     const subject = document.getElementById('subject').value;
     const className = document.getElementById('class').value;
-    const year = document.getElementById('year').value;
+    const file = document.getElementById('file').files[0]; // Le fichier PDF
 
-    if (subject && className) {
+    if (subject && className && file) {
         try {
+            alert("Téléchargement du PDF en cours... patientez.");
+            
+            // 1. Envoyer le fichier au Storage
+            const storageRef = ref(storage, 'epreuves/' + file.name);
+            await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(storageRef);
+
+            // 2. Enregistrer les infos dans la base de données
             await addDoc(collection(db, "epreuves"), {
-                matiere: subject.toLowerCase(), // On stocke en minuscule pour faciliter la recherche
-                classe: className.toLowerCase(),
-                annee: year,
+                matiere: subject,
+                classe: className,
+                lienPdf: url, // C'est ce lien qui permet de télécharger !
                 date: serverTimestamp()
             });
-            alert("Épreuve ajoutée !");
+
+            alert("Succès ! L'épreuve est en ligne.");
             location.reload();
         } catch (e) { alert("Erreur : " + e.message); }
-    } else { alert("Remplissez les champs !"); }
+    } else { alert("Remplissez tout et choisissez un PDF !"); }
 });
 
-// --- FONCTION RECHERCHE ---
-document.getElementById('search').addEventListener('input', async (e) => {
-    const searchText = e.target.value.toLowerCase();
+// --- AFFICHER LA LISTE AVEC BOUTONS DE TÉLÉCHARGEMENT ---
+async function afficherListe() {
     const listElement = document.getElementById('list');
-    listElement.innerHTML = ""; // On vide la liste actuelle
-
-    const q = query(collection(db, "epreuves"));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(collection(db, "epreuves"));
+    listElement.innerHTML = ""; 
 
     querySnapshot.forEach((doc) => {
         const data = doc.data();
-        // Si la matière ou la classe contient le texte recherché
-        if (data.matiere.includes(searchText) || data.classe.includes(searchText)) {
-            const li = document.createElement('li');
-            li.textContent = `${data.matiere.toUpperCase()} - ${data.classe.toUpperCase()} (${data.annee})`;
-            listElement.appendChild(li);
-        }
+        const li = document.createElement('li');
+        li.style.marginBottom = "10px";
+        li.innerHTML = `
+            <strong>${data.matiere} (${data.classe})</strong> 
+            <br>
+            <a href="${data.lienPdf}" target="_blank" style="color: blue; text-decoration: underline;">
+               📥 Télécharger le PDF
+            </a>
+        `;
+        listElement.appendChild(li);
     });
-});
+}
+
+afficherListe(); // Lance l'affichage au démarrage
