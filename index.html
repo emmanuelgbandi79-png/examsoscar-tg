@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExamShare TG</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="https://img.icons8.com/color/48/000000/pdf.png">
+</head>
+<body>
+<header>
+    <h1>📚 ExamShare TG</h1>
+    <p>Partage et télécharge les épreuves scolaires facilement</p>
+    <p class="owner">👑 Boss Oscar</p>
+    <p id="oscar-count" class="oscar">🎖️ Oscar : 0</p>
+</header>
+
+<main>
+    <!-- Ajouter une épreuve -->
+    <section id="add-exam" class="card">
+        <h2>📤 Ajouter une épreuve</h2>
+        <input type="text" id="subject" placeholder="Matière">
+        <input type="text" id="class" placeholder="Classe">
+        <input type="text" id="year" placeholder="Année">
+        <input type="file" id="file" accept=".pdf">
+        <button id="add-btn">Ajouter</button>
+    </section>
+
+    <!-- Rechercher une épreuve -->
+    <section id="search-exam" class="card">
+        <h2>🔎 Rechercher</h2>
+        <input type="text" id="search" placeholder="Chercher par matière ou classe">
+    </section>
+
+    <!-- Liste des épreuves -->
+    <section id="exam-list" class="card">
+        <h2>📖 Liste des épreuves</h2>
+        <ul id="list"></ul>
+    </section>
+</main>
+
+<footer>
+    <p>ExamShare TG - Gratuit | Mobile & Desktop</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
