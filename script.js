@@ -13,75 +13,76 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// --- FONCTION POUR CHARGER ET RECHERCHER ---
-async function chargerEpreuves(filtre = "") {
-    const listElement = document.getElementById('list');
-    listElement.innerHTML = "<li>Chargement...</li>";
-    
-    try {
-        const q = query(collection(db, "epreuves"), orderBy("date", "desc"));
-        const querySnapshot = await getDocs(q);
-        listElement.innerHTML = "";
+// REMPLACE CECI PAR TES INFOS CLOUDINARY
+const CLOUD_NAME = "TON_CLOUD_NAME"; 
+const UPLOAD_PRESET = "exam-preset";
 
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const texte = (data.matiere + " " + data.classe).toLowerCase();
-            
-            if (texte.includes(filtre.toLowerCase())) {
-                const li = document.createElement('li');
-                li.style.background = "white";
-                li.style.margin = "10px 0";
-                li.style.padding = "15px";
-                li.style.borderRadius = "8px";
-                li.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
-                
-                li.innerHTML = `
+// --- CHARGER LA LISTE ---
+async function chargerListe(recherche = "") {
+    const listElement = document.getElementById('list');
+    const q = query(collection(db, "epreuves"), orderBy("date", "desc"));
+    const snapshot = await getDocs(q);
+    listElement.innerHTML = "";
+
+    snapshot.forEach(doc => {
+        const data = doc.data();
+        const info = (data.matiere + " " + data.classe).toLowerCase();
+        if (info.includes(recherche.toLowerCase())) {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <div style="background:white; margin:10px; padding:15px; border-radius:10px; border:1px solid #ddd">
                     <strong>${data.matiere.toUpperCase()}</strong> - ${data.classe}<br>
-                    <small>Année: ${data.annee || 'N/A'}</small><br>
-                    <a href="${data.lienPdf}" target="_blank" style="display:inline-block; margin-top:10px; color:white; background:#0056b3; padding:5px 10px; text-decoration:none; border-radius:4px;">
+                    <a href="${data.urlPdf}" target="_blank" style="display:inline-block; margin-top:10px; color:white; background:#007bff; padding:8px 15px; text-decoration:none; border-radius:5px;">
                         📥 Télécharger le PDF
                     </a>
-                `;
-                listElement.appendChild(li);
-            }
-        });
-    } catch (e) {
-        listElement.innerHTML = "<li>Erreur de chargement.</li>";
-    }
+                </div>`;
+            listElement.appendChild(li);
+        }
+    });
 }
-
-// --- BARRE DE RECHERCHE ---
-document.getElementById('search').addEventListener('input', (e) => {
-    chargerEpreuves(e.target.value);
-});
 
 // --- BOUTON AJOUTER ---
 document.getElementById('add-btn').addEventListener('click', async () => {
+    const file = document.getElementById('file').files[0];
     const subject = document.getElementById('subject').value;
     const className = document.getElementById('class').value;
-    const year = document.getElementById('year').value;
-    
-    // Pour l'instant on demande un lien direct (Google Drive ou autre) car Storage est bloqué
-    const lienDoc = prompt("Collez ici le lien de téléchargement (Google Drive, Dropbox, etc.) :");
 
-    if (subject && className && lienDoc) {
-        try {
-            await addDoc(collection(db, "epreuves"), {
-                matiere: subject,
-                classe: className,
-                annee: year,
-                lienPdf: lienDoc,
-                date: serverTimestamp()
-            });
-            alert("Épreuve ajoutée avec succès !");
-            location.reload();
-        } catch (e) {
-            alert("Erreur permission : " + e.message);
-        }
-    } else {
-        alert("Remplissez tout (Matière, Classe et le lien du fichier) !");
+    if (!file || !subject) return alert("Choisis un PDF et remplis la matière !");
+
+    const btn = document.getElementById('add-btn');
+    btn.innerText = "Envoi en cours...";
+    btn.disabled = true;
+
+    try {
+        // 1. Envoi automatique vers Cloudinary
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', UPLOAD_PRESET);
+
+        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
+            method: 'POST',
+            body: formData
+        });
+        const uploadData = await response.json();
+
+        // 2. Enregistrement du lien dans Firebase
+        await addDoc(collection(db, "epreuves"), {
+            matiere: subject,
+            classe: className,
+            urlPdf: uploadData.secure_url,
+            date: serverTimestamp()
+        });
+
+        alert("Terminé ! L'épreuve est en ligne.");
+        location.reload();
+    } catch (err) {
+        alert("Erreur. Vérifie ton Cloud Name !");
+        btn.innerText = "Ajouter";
+        btn.disabled = false;
     }
 });
 
-// Lancer au démarrage
-chargerEpreuves();
+// --- RECHERCHE ---
+document.getElementById('search').addEventListener('input', (e) => chargerListe(e.target.value));
+
+chargerListe();
