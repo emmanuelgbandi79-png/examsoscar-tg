@@ -96,7 +96,7 @@ document.getElementById('add-btn').addEventListener('click', async () => {
             alert("Épreuve ajoutée avec succès !");
             location.reload();
         } else {
-            throw new Error("Erreur Cloudinary");
+            throw new Error("Cloudinary");
         }
     } catch (err) {
         console.error(err);
