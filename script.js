@@ -1,97 +1,23 @@
-let exams = JSON.parse(localStorage.getItem('exams')) || [];
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-const addBtn = document.getElementById('add-btn');
-const searchInput = document.getElementById('search');
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDeRMiR2fAe-5La98F4J_E-1cyDHceyCsw",
+    authDomain: "exam-73707.firebaseapp.com",
+    projectId: "exam-73707",
+    storageBucket: "exam-73707.firebasestorage.app",
+    messagingSenderId: "219139072155",
+    appId: "1:219139072155:web:dba75c1f67de400f70263e",
+    measurementId: "G-8K1028ZTDH"
+  };
 
-addBtn.addEventListener('click', addExam);
-searchInput.addEventListener('input', searchExam);
-
-function updateOscarCount() {
-    const countElem = document.getElementById('oscar-count');
-    countElem.textContent = `🎖️ Oscar : ${exams.length}`;
-}
-
-function addExam() {
-    const subject = document.getElementById('subject').value.trim();
-    const className = document.getElementById('class').value.trim();
-    const year = document.getElementById('year').value.trim();
-    const fileInput = document.getElementById('file');
-
-    if (!subject || !className || !year || !fileInput.files[0]) {
-        alert("Remplis tous les champs et choisis un fichier PDF !");
-        return;
-    }
-
-    const file = fileInput.files[0];
-    if(file.type !== "application/pdf") {
-        alert("Seuls les fichiers PDF sont autorisés !");
-        return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = function(e) {
-        exams.push({
-            subject,
-            className,
-            year,
-            fileName: file.name,
-            fileData: e.target.result
-        });
-        localStorage.setItem('exams', JSON.stringify(exams));
-        displayExams();
-        updateOscarCount(); // Mise à jour du compteur
-        document.getElementById('subject').value = '';
-        document.getElementById('class').value = '';
-        document.getElementById('year').value = '';
-        fileInput.value = '';
-    }
-
-    reader.readAsDataURL(file);
-}
-
-function displayExams(list = exams) {
-    const ul = document.getElementById('list');
-    ul.innerHTML = '';
-    list.forEach((exam, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <div>
-                <strong>${exam.subject}</strong> - ${exam.className} - ${exam.year} <br>
-                ${exam.fileName}
-            </div>
-            <button data-index="${index}" class="download-btn">Télécharger</button>
-        `;
-        ul.appendChild(li);
-    });
-
-    // Ajouter événements téléchargement
-    const downloadButtons = document.querySelectorAll('.download-btn');
-    downloadButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const idx = this.getAttribute('data-index');
-            downloadExam(idx);
-        });
-    });
-}
-
-function downloadExam(index) {
-    const exam = exams[index];
-    const a = document.createElement('a');
-    a.href = exam.fileData;
-    a.download = exam.fileName;
-    a.click();
-}
-
-function searchExam() {
-    const term = searchInput.value.toLowerCase();
-    const filtered = exams.filter(exam => 
-        exam.subject.toLowerCase().includes(term) ||
-        exam.className.toLowerCase().includes(term)
-    );
-    displayExams(filtered);
-}
-
-// Afficher les examens et compteur au chargement
-displayExams();
-updateOscarCount();
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
