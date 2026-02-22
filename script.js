@@ -13,76 +13,79 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// REMPLACE CECI PAR TES INFOS CLOUDINARY
-const CLOUD_NAME = "TON_CLOUD_NAME"; 
+const CLOUD_NAME = "dajzki7n0"; 
 const UPLOAD_PRESET = "exam-preset";
 
-// --- CHARGER LA LISTE ---
+// --- CHARGER ET RECHERCHER ---
 async function chargerListe(recherche = "") {
     const listElement = document.getElementById('list');
-    const q = query(collection(db, "epreuves"), orderBy("date", "desc"));
-    const snapshot = await getDocs(q);
-    listElement.innerHTML = "";
+    try {
+        const q = query(collection(db, "epreuves"), orderBy("date", "desc"));
+        const snapshot = await getDocs(q);
+        listElement.innerHTML = "";
 
-    snapshot.forEach(doc => {
-        const data = doc.data();
-        const info = (data.matiere + " " + data.classe).toLowerCase();
-        if (info.includes(recherche.toLowerCase())) {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <div style="background:white; margin:10px; padding:15px; border-radius:10px; border:1px solid #ddd">
-                    <strong>${data.matiere.toUpperCase()}</strong> - ${data.classe}<br>
-                    <a href="${data.urlPdf}" target="_blank" style="display:inline-block; margin-top:10px; color:white; background:#007bff; padding:8px 15px; text-decoration:none; border-radius:5px;">
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const combo = (data.matiere + " " + data.classe).toLowerCase();
+            if (combo.includes(recherche.toLowerCase())) {
+                const li = document.createElement('li');
+                li.style.background = "#f9f9f9";
+                li.style.padding = "15px";
+                li.style.margin = "10px 0";
+                li.style.borderRadius = "8px";
+                li.innerHTML = `
+                    <strong>${data.matiere.toUpperCase()}</strong> - ${data.classe} (${data.annee})<br>
+                    <a href="${data.urlPdf}" target="_blank" style="display:inline-block; margin-top:10px; color:white; background:#007bff; padding:8px 12px; text-decoration:none; border-radius:5px;">
                         📥 Télécharger le PDF
-                    </a>
-                </div>`;
-            listElement.appendChild(li);
-        }
-    });
+                    </a>`;
+                listElement.appendChild(li);
+            }
+        });
+    } catch (e) { console.log("Erreur de chargement"); }
 }
 
-// --- BOUTON AJOUTER ---
+// --- AJOUTER ---
 document.getElementById('add-btn').addEventListener('click', async () => {
     const file = document.getElementById('file').files[0];
     const subject = document.getElementById('subject').value;
     const className = document.getElementById('class').value;
+    const year = document.getElementById('year').value;
 
-    if (!file || !subject) return alert("Choisis un PDF et remplis la matière !");
+    if (!file || !subject) return alert("Veuillez choisir un PDF et entrer la matière.");
 
     const btn = document.getElementById('add-btn');
-    btn.innerText = "Envoi en cours...";
+    btn.innerText = "Patientez... Envoi en cours";
     btn.disabled = true;
 
     try {
-        // 1. Envoi automatique vers Cloudinary
+        // Envoi vers Cloudinary
         const formData = new FormData();
         formData.append('file', file);
         formData.append('upload_preset', UPLOAD_PRESET);
 
-        const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
             method: 'POST',
             body: formData
         });
-        const uploadData = await response.json();
+        const uploadData = await res.json();
 
-        // 2. Enregistrement du lien dans Firebase
+        // Enregistrement dans Firebase
         await addDoc(collection(db, "epreuves"), {
             matiere: subject,
             classe: className,
+            annee: year,
             urlPdf: uploadData.secure_url,
             date: serverTimestamp()
         });
 
-        alert("Terminé ! L'épreuve est en ligne.");
+        alert("Succès ! L'épreuve est ajoutée.");
         location.reload();
     } catch (err) {
-        alert("Erreur. Vérifie ton Cloud Name !");
+        alert("Erreur d'envoi. Vérifie tes règles Firebase.");
         btn.innerText = "Ajouter";
         btn.disabled = false;
     }
 });
 
-// --- RECHERCHE ---
 document.getElementById('search').addEventListener('input', (e) => chargerListe(e.target.value));
-
 chargerListe();
