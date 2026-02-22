@@ -48,10 +48,10 @@ document.getElementById('add-btn').addEventListener('click', async () => {
     btn.innerText = "Envoi..."; btn.disabled = true;
 
     try {
-        const fileName = `${Date.now()}_${file.name}`;
+        // Utilisation du bucket "epreuves" que tu as créé
+        const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
         const uploadUrl = `${SUPABASE_URL}/storage/v1/object/public/epreuves/${fileName}`;
 
-        // Envoi à Supabase
         const res = await fetch(uploadUrl, {
             method: 'POST',
             headers: { 
@@ -63,22 +63,24 @@ document.getElementById('add-btn').addEventListener('click', async () => {
         });
 
         if (res.ok) {
-            // Sauvegarde dans Firebase
             await addDoc(collection(db, "epreuves"), {
                 matiere: subject,
                 classe: className,
                 urlPdf: uploadUrl,
                 date: serverTimestamp()
             });
-            alert("Épreuve ajoutée !");
+            alert("Succès ! Épreuve ajoutée.");
             location.reload();
         } else {
-            alert("Erreur lors de l'envoi au stockage.");
+            const errorData = await res.json();
+            console.error("Détail erreur:", errorData);
+            alert("Erreur de stockage : " + (errorData.message || "Vérifiez le bucket"));
         }
     } catch (e) {
-        alert("Une erreur est survenue.");
+        console.error("Erreur Fetch:", e);
+        alert("Une erreur est survenue lors de la connexion.");
     }
-    btn.disabled = false; btn.innerText = "Ajouter";
+    btn.disabled = false; btn.innerText = "Ajouter l'épreuve";
 });
 
 chargerListe();
