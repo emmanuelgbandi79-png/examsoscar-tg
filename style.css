@@ -1,0 +1,132 @@
+/* RESET & FONT */
+body, h1, h2, p, ul, li, input, button {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* BODY & HEADER */
+body {
+    background: #f0f4f8;
+    color: #333;
+}
+
+header {
+    background: #0077cc;
+    color: white;
+    text-align: center;
+    padding: 20px;
+}
+
+header h1 {
+    font-size: 2em;
+    margin-bottom: 5px;
+}
+
+header p {
+    font-size: 1em;
+}
+
+/* Owner / Boss Oscar */
+.owner {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #ff9900;
+    text-align: center;
+    margin-top: 5px;
+    text-shadow: 1px 1px 2px #000;
+}
+
+/* Compteur Oscar */
+.oscar {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: gold;
+    text-align: center;
+    margin-top: 5px;
+    text-shadow: 1px 1px 2px #000;
+}
+
+/* MAIN CARDS */
+main {
+    padding: 15px;
+}
+
+.card {
+    background: white;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* INPUTS */
+input[type="text"], input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 1em;
+}
+
+/* BUTTONS */
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 8px;
+    background: #0077cc;
+    color: white;
+    font-size: 1em;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #005fa3;
+}
+
+/* LIST */
+ul {
+    list-style: none;
+}
+
+li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #e8f0fe;
+    padding: 12px;
+    border-radius: 10px;
+    margin: 10px 0;
+    flex-wrap: wrap;
+}
+
+li div {
+    display: flex;
+    flex-direction: column;
+}
+
+/* PDF ICON */
+li::before {
+    content: "📄";
+    margin-right: 10px;
+    font-size: 1.5em;
+}
+
+/* FOOTER */
+footer {
+    text-align: center;
+    padding: 10px;
+    font-size: 0.9em;
+    color: #555;
+}
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+    header h1 { font-size: 1.5em; }
+    li { flex-direction: column; align-items: flex-start; }
+}
