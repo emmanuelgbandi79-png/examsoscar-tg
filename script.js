@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDeRMiR2fAe-5La98F4J_E-1cyDHceyCsw",
@@ -13,48 +13,75 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Afficher la liste avec liens de téléchargement
-async function chargerEpreuves() {
+// --- FONCTION POUR CHARGER ET RECHERCHER ---
+async function chargerEpreuves(filtre = "") {
     const listElement = document.getElementById('list');
-    listElement.innerHTML = "Chargement...";
-    const querySnapshot = await getDocs(collection(db, "epreuves"));
-    listElement.innerHTML = "";
+    listElement.innerHTML = "<li>Chargement...</li>";
+    
+    try {
+        const q = query(collection(db, "epreuves"), orderBy("date", "desc"));
+        const querySnapshot = await getDocs(q);
+        listElement.innerHTML = "";
 
-    querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const li = document.createElement('li');
-        li.style.padding = "10px";
-        li.style.borderBottom = "1px solid #ccc";
-        li.innerHTML = `
-            <strong>${data.matiere}</strong> - ${data.classe} (${data.annee})<br>
-            <a href="${data.lienPdf}" target="_blank" style="color: blue; font-weight: bold; text-decoration: underline;">
-                📥 Télécharger l'épreuve
-            </a>
-        `;
-        listElement.appendChild(li);
-    });
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const texte = (data.matiere + " " + data.classe).toLowerCase();
+            
+            if (texte.includes(filtre.toLowerCase())) {
+                const li = document.createElement('li');
+                li.style.background = "white";
+                li.style.margin = "10px 0";
+                li.style.padding = "15px";
+                li.style.borderRadius = "8px";
+                li.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                
+                li.innerHTML = `
+                    <strong>${data.matiere.toUpperCase()}</strong> - ${data.classe}<br>
+                    <small>Année: ${data.annee || 'N/A'}</small><br>
+                    <a href="${data.lienPdf}" target="_blank" style="display:inline-block; margin-top:10px; color:white; background:#0056b3; padding:5px 10px; text-decoration:none; border-radius:4px;">
+                        📥 Télécharger le PDF
+                    </a>
+                `;
+                listElement.appendChild(li);
+            }
+        });
+    } catch (e) {
+        listElement.innerHTML = "<li>Erreur de chargement.</li>";
+    }
 }
 
-// Bouton Ajouter
+// --- BARRE DE RECHERCHE ---
+document.getElementById('search').addEventListener('input', (e) => {
+    chargerEpreuves(e.target.value);
+});
+
+// --- BOUTON AJOUTER ---
 document.getElementById('add-btn').addEventListener('click', async () => {
     const subject = document.getElementById('subject').value;
     const className = document.getElementById('class').value;
-    // Note : Pour l'instant on met un lien de test car ton Storage est bloqué
-    const testLink = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+    const year = document.getElementById('year').value;
+    
+    // Pour l'instant on demande un lien direct (Google Drive ou autre) car Storage est bloqué
+    const lienDoc = prompt("Collez ici le lien de téléchargement (Google Drive, Dropbox, etc.) :");
 
-    try {
-        await addDoc(collection(db, "epreuves"), {
-            matiere: subject,
-            classe: className,
-            annee: document.getElementById('year').value,
-            lienPdf: testLink, 
-            date: serverTimestamp()
-        });
-        alert("Ajouté avec succès !");
-        chargerEpreuves();
-    } catch (e) {
-        alert("Erreur de permissions ! Vérifie tes Règles Firebase.");
+    if (subject && className && lienDoc) {
+        try {
+            await addDoc(collection(db, "epreuves"), {
+                matiere: subject,
+                classe: className,
+                annee: year,
+                lienPdf: lienDoc,
+                date: serverTimestamp()
+            });
+            alert("Épreuve ajoutée avec succès !");
+            location.reload();
+        } catch (e) {
+            alert("Erreur permission : " + e.message);
+        }
+    } else {
+        alert("Remplissez tout (Matière, Classe et le lien du fichier) !");
     }
 });
 
+// Lancer au démarrage
 chargerEpreuves();
