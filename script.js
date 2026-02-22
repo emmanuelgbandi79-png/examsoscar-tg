@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// CONFIGURATION FIREBASE
+// --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
   apiKey: "AIzaSyDeRMiR2fAe-5La98F4J_E-1cyDHceyCsw",
   authDomain: "exam-73707.firebaseapp.com",
@@ -13,7 +13,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// CONFIGURATION SUPABASE
+// --- CONFIGURATION SUPABASE ---
 const SUPABASE_URL = "https://nkxabvsjswaadfcnggsb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_PFFj1CPjtHBQTgQ9f2fdkg_18kYP4WG";
 
@@ -42,14 +42,16 @@ document.getElementById('add-btn').addEventListener('click', async () => {
     const subject = document.getElementById('subject').value;
     const className = document.getElementById('class').value;
 
-    if (!file || !subject) return alert("Veuillez remplir les champs.");
+    if (!file || !subject) return alert("Remplis tous les champs !");
 
     const btn = document.getElementById('add-btn');
     btn.innerText = "Envoi..."; btn.disabled = true;
 
     try {
-        // Utilisation du bucket "epreuves" que tu as créé
+        // On nettoie le nom du fichier (pas d'espaces)
         const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+        
+        // ON UTILISE LE BUCKET "epreuves"
         const uploadUrl = `${SUPABASE_URL}/storage/v1/object/public/epreuves/${fileName}`;
 
         const res = await fetch(uploadUrl, {
@@ -57,30 +59,5 @@ document.getElementById('add-btn').addEventListener('click', async () => {
             headers: { 
                 'Authorization': `Bearer ${SUPABASE_KEY}`, 
                 'apikey': SUPABASE_KEY,
-                'Content-Type': file.type
-            },
-            body: file
-        });
-
-        if (res.ok) {
-            await addDoc(collection(db, "epreuves"), {
-                matiere: subject,
-                classe: className,
-                urlPdf: uploadUrl,
-                date: serverTimestamp()
-            });
-            alert("Succès ! Épreuve ajoutée.");
-            location.reload();
-        } else {
-            const errorData = await res.json();
-            console.error("Détail erreur:", errorData);
-            alert("Erreur de stockage : " + (errorData.message || "Vérifiez le bucket"));
-        }
-    } catch (e) {
-        console.error("Erreur Fetch:", e);
-        alert("Une erreur est survenue lors de la connexion.");
-    }
-    btn.disabled = false; btn.innerText = "Ajouter l'épreuve";
-});
-
-chargerListe();
+                'Content-Type': file
+              
