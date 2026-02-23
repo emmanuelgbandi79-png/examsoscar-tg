@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// 1. CONFIGURATION FIREBASE (Inchangée)
+// 1. CONFIGURATION FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyDeRMiR2fAe-5La98F4J_E-1cyDHceyCsw",
   authDomain: "exam-73707.firebaseapp.com",
@@ -13,11 +13,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// 2. CONFIGURATION SUPABASE (Tes clés vérifiées)
+// 2. CONFIGURATION SUPABASE
 const SUPABASE_URL = "https://nkxabvsjswaadfcnggsb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_PFFj1CPjtHBQTgQ9f2fdkg_18kYP4WG";
 
-// 3. FONCTION POUR CHARGER LA LISTE
+// 3. CHARGEMENT DE LA LISTE
 async function chargerListe() {
     try {
         const listElement = document.getElementById('list');
@@ -32,29 +32,26 @@ async function chargerListe() {
                             <a href="${data.urlPdf}" target="_blank" style="background:#28a745; color:white; padding:10px; text-decoration:none; border-radius:8px;">📥 Télécharger</a>`;
             listElement.appendChild(li);
         });
-    } catch (e) { console.error("Erreur liste:", e); }
+    } catch (e) { console.error(e); }
 }
 
-// 4. FONCTION POUR AJOUTER UNE ÉPREUVE
+// 4. AJOUTER UNE ÉPREUVE
 document.getElementById('add-btn').onclick = async function() {
     const file = document.getElementById('file').files[0];
     const subject = document.getElementById('subject').value;
     const className = document.getElementById('class').value;
 
-    if (!file || !subject) {
-        alert("Veuillez choisir un fichier et une matière !");
-        return;
-    }
+    if (!file || !subject) return alert("Remplis tous les champs !");
 
     const btn = document.getElementById('add-btn');
     btn.innerText = "⏳ Envoi...";
     btn.disabled = true;
 
     try {
-        // Nettoyage du nom de fichier (pas d'espaces ni d'accents)
+        // Nettoyage du nom de fichier
         const fileName = Date.now() + "_" + file.name.replace(/[^a-z0-9.]/gi, '_');
         
-        // --- NOTE IMPORTANTE : Utilisation de "EPREUVES" en MAJUSCULES ---
+        // --- UTILISATION DU NOM EXACT EN MAJUSCULES ---
         const uploadUrl = `${SUPABASE_URL}/storage/v1/object/public/EPREUVES/${fileName}`;
 
         const res = await fetch(uploadUrl, {
@@ -68,22 +65,20 @@ document.getElementById('add-btn').onclick = async function() {
         });
 
         if (res.ok) {
-            // Sauvegarde du lien dans Firebase
             await addDoc(collection(db, "epreuves"), {
                 matiere: subject,
                 classe: className,
                 urlPdf: uploadUrl,
                 date: serverTimestamp()
             });
-            alert("✅ Succès ! L'épreuve a été ajoutée.");
+            alert("✅ Succès ! L'épreuve est ajoutée.");
             location.reload();
         } else {
-            const errorData = await res.json();
-            alert("❌ Erreur de stockage : " + errorData.message);
+            const err = await res.json();
+            alert("❌ Erreur : " + err.message);
         }
     } catch (e) {
-        alert("❌ Erreur de connexion au serveur.");
-        console.error(e);
+        alert("❌ Erreur de connexion.");
     } finally {
         btn.innerText = "Ajouter l'épreuve";
         btn.disabled = false;
