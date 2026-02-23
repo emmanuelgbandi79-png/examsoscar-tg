@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-// --- CONFIGURATION FIREBASE ---
+// 1. CONFIGURATION (Tes clés vérifiées)
 const firebaseConfig = {
   apiKey: "AIzaSyDeRMiR2fAe-5La98F4J_E-1cyDHceyCsw",
   authDomain: "exam-73707.firebaseapp.com",
@@ -13,51 +13,37 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// --- CONFIGURATION SUPABASE ---
 const SUPABASE_URL = "https://nkxabvsjswaadfcnggsb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_PFFj1CPjtHBQTgQ9f2fdkg_18kYP4WG";
 
-// 1. CHARGER LA LISTE
-async function chargerListe(recherche = "") {
-    const listElement = document.getElementById('list');
-    const q = query(collection(db, "epreuves"), orderBy("date", "desc"));
-    const snapshot = await getDocs(q);
-    listElement.innerHTML = "";
-    snapshot.forEach(doc => {
-        const data = doc.data();
-        if ((data.matiere + data.classe).toLowerCase().includes(recherche.toLowerCase())) {
+// 2. FONCTION POUR AFFICHER LA LISTE
+async function chargerListe() {
+    try {
+        const listElement = document.getElementById('list');
+        const snapshot = await getDocs(query(collection(db, "epreuves"), orderBy("date", "desc")));
+        listElement.innerHTML = "";
+        snapshot.forEach(doc => {
+            const data = doc.data();
             const li = document.createElement('li');
             li.style.cssText = "background:white; padding:15px; margin:10px 0; border-radius:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.1);";
-            li.innerHTML = `<div><strong>${data.matiere.toUpperCase()}</strong><br><small>${data.classe}</small></div>
+            li.innerHTML = `<div><strong>${data.matiere.toUpperCase()}</strong><br>${data.classe}</div>
                             <a href="${data.urlPdf}" target="_blank" style="background:#28a745; color:white; padding:10px; text-decoration:none; border-radius:8px;">📥 Télécharger</a>`;
             listElement.appendChild(li);
-        }
-    });
+        });
+    } catch (e) { console.log("Erreur liste:", e); }
 }
 
-// 2. AJOUTER UNE ÉPREUVE
-document.getElementById('add-btn').addEventListener('click', async () => {
-    const fileInput = document.getElementById('file');
-    const file = fileInput.files[0];
+// 3. FONCTION POUR AJOUTER (C'est ici que ça bloquait)
+document.getElementById('add-btn').onclick = async function() {
+    const file = document.getElementById('file').files[0];
     const subject = document.getElementById('subject').value;
     const className = document.getElementById('class').value;
 
-    if (!file || !subject) return alert("Remplis tous les champs !");
+    if (!file || !subject) {
+        alert("Remplis tous les champs !");
+        return;
+    }
 
     const btn = document.getElementById('add-btn');
-    btn.innerText = "Envoi..."; btn.disabled = true;
-
-    try {
-        // On nettoie le nom du fichier (pas d'espaces)
-        const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-        
-        // ON UTILISE LE BUCKET "epreuves"
-        const uploadUrl = `${SUPABASE_URL}/storage/v1/object/public/epreuves/${fileName}`;
-
-        const res = await fetch(uploadUrl, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${SUPABASE_KEY}`, 
-                'apikey': SUPABASE_KEY,
-                'Content-Type': file
-              
+    btn.innerText = "Envoi...";
+  
