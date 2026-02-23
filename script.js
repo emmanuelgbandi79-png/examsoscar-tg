@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+// --- CONFIGURATION ---
 const firebaseConfig = {
   apiKey: "AIzaSyDeRMiR2fAe-5La98F4J_E-1cyDHceyCsw",
   authDomain: "exam-73707.firebaseapp.com",
@@ -15,47 +16,51 @@ const db = getFirestore(app);
 const SUPABASE_URL = "https://nkxabvsjswaadfcnggsb.supabase.co";
 const SUPABASE_KEY = "sb_publishable_PFFj1CPjtHBQTgQ9f2fdkg_18kYP4WG";
 
+// --- CHARGER LA LISTE ---
 async function chargerListe() {
+    const listElement = document.getElementById('list');
     try {
-        const listElement = document.getElementById('list');
         const q = query(collection(db, "epreuves"), orderBy("date", "desc"));
         const snapshot = await getDocs(q);
         listElement.innerHTML = "";
         snapshot.forEach(doc => {
             const data = doc.data();
-            const li = document.createElement('li');
-            li.style.cssText = "background:white; padding:15px; margin:10px 0; border-radius:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,0.1);";
-            li.innerHTML = `<div><strong>${data.matiere.toUpperCase()}</strong><br>${data.classe}</div>
-                            <a href="${data.urlPdf}" target="_blank" style="background:#28a745; color:white; padding:10px; text-decoration:none; border-radius:8px;">📥 Télécharger</a>`;
-            listElement.appendChild(li);
+            const item = document.createElement('div');
+            item.className = "epreuve-card";
+            item.innerHTML = `
+                <strong>${data.matiere}</strong> (${data.classe})<br>
+                <a href="${data.urlPdf}" target="_blank">📥 Télécharger</a>
+            `;
+            listElement.appendChild(item);
         });
-    } catch (e) { console.log(e); }
+    } catch (e) {
+        listElement.innerHTML = "Erreur de chargement.";
+    }
 }
 
+// --- AJOUTER UNE ÉPREUVE ---
 document.getElementById('add-btn').onclick = async function() {
-    const fileInput = document.getElementById('file');
+    const file = document.getElementById('file').files[0];
     const subject = document.getElementById('subject').value;
     const className = document.getElementById('class').value;
 
-    if (!fileInput.files[0] || !subject) return alert("Remplis tout !");
+    if (!file || !subject) return alert("Veuillez remplir les champs.");
 
-    const file = fileInput.files[0];
     const btn = document.getElementById('add-btn');
     btn.innerText = "⏳ Envoi...";
     btn.disabled = true;
 
     try {
-        const fileName = Date.now() + "_" + file.name.replace(/[^a-z0-9.]/gi, '_');
-        // On vise le bucket 'pdf' que tu viens de configurer
-        const uploadUrl = `${SUPABASE_URL}/storage/v1/object/public/pdf/${fileName}`;
+        const fileName = `${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+        // On vise le bucket 'epreuves' en minuscules
+        const uploadUrl = `${SUPABASE_URL}/storage/v1/object/public/epreuves/${fileName}`;
 
         const res = await fetch(uploadUrl, {
             method: 'POST',
             headers: { 
                 'Authorization': `Bearer ${SUPABASE_KEY}`, 
                 'apikey': SUPABASE_KEY,
-                'Content-Type': 'application/pdf', // On force le type PDF
-                'x-upsert': 'true'
+                'Content-Type': file.type
             },
             body: file
         });
@@ -67,14 +72,18 @@ document.getElementById('add-btn').onclick = async function() {
                 urlPdf: uploadUrl,
                 date: serverTimestamp()
             });
-            alert("✅ Succès !");
+            alert("✅ Réussi !");
             location.reload();
         } else {
             const err = await res.json();
-            alert("❌ Erreur Supabase : " + err.message);
+            alert("Erreur Supabase: " + err.message);
         }
-    } catch (e) { alert("❌ Erreur de connexion."); }
-    btn.disabled = false; btn.innerText = "Ajouter l'épreuve";
+    } catch (e) {
+        alert("Erreur de connexion.");
+    } finally {
+        btn.innerText = "Ajouter l'épreuve";
+        btn.disabled = false;
+    }
 };
 
 chargerListe();
